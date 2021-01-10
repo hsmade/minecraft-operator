@@ -26,7 +26,6 @@ metadata:
     operators.operatorframework.io/builder: operator-sdk-v1.3.0
     operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
   name: minecraft-operator.v0.0.1
-  namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
