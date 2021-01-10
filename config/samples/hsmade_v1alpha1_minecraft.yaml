@@ -1,0 +1,14 @@
+apiVersion: hsmade.com/v1alpha1
+kind: Minecraft
+metadata:
+  name: minecraft-sample
+spec:
+  # Default values copied from <project_dir>/helm-charts/minecraft/values.yaml
+  enabled: true
+  minecraft:
+    version: latest
+  storage:
+    path: /tmp/minecraft
+    size: 5Gi
+  
+  

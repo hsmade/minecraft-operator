@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft-{{ .Release.Name }}
+  labels:
+    app: minecraft-{{ .Release.Name }}
+spec:
+  replicas: {{ if .Values.enabled }}1{{ else }}0{{ end }}
+  selector:
+    matchLabels:
+      app: minecraft-{{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: minecraft-{{ .Release.Name }}
+    spec:
+      containers:
+      - name: minecraft-{{ .Release.Name }}
+        image: hsmade/spigot:{{ .Values.minecraft.version }} 
+        stdin: true
+        tty: true
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 25565
+        - containerPort: 9265
+        volumeMounts:
+        - mountPath: "/minecraft"
+          name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minecraft-{{ .Release.Name }}

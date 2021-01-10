@@ -1,0 +1,6 @@
+storage:
+  size: 5Gi
+  path: /tmp/minecraft
+minecraft:
+  version: latest
+enabled: true
