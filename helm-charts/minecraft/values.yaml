@@ -1,6 +1,16 @@
+enabled: true
 storage:
   size: 5Gi
   path: /tmp/minecraft
 minecraft:
-  version: latest
-enabled: true
+  image: itzg/minecraft-server
+  tag: latest
+  version: 1.14.4
+  type: VANILLA
+  mode: creative
+  #name: my server
+  #motd: my server
+  enable_command_block: TRUE
+  difficulty: peaceful
+  ops:
+  mods: #comma separated list of urls
