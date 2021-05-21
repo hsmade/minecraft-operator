@@ -1,20 +1,20 @@
-# permissions for end users to view minecrafts.
+# permissions for end users to view servers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: minecraft-viewer-role
+  name: server-viewer-role
 rules:
 - apiGroups:
-  - hsmade.com
+  - minecraft.hsmade.com
   resources:
-  - minecrafts
+  - servers
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - hsmade.com
+  - minecraft.hsmade.com
   resources:
-  - minecrafts/status
+  - servers/status
   verbs:
   - get

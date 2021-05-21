@@ -1,42 +1,15 @@
+
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  creationTimestamp: null
   name: manager-role
 rules:
-##
-## Base operator rules
-##
-# We need to get namespaces so the operator can read namespaces to ensure they exist
 - apiGroups:
   - ""
   resources:
-  - namespaces
-  verbs:
-  - get
-# We need to manage Helm release secrets
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - "*"
-# We need to create events on CRs about things happening during reconciliation
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-
-##
-## Rules for hsmade.com/v1alpha1, Kind: Minecraft
-##
-- apiGroups:
-  - hsmade.com
-  resources:
-  - minecrafts
-  - minecrafts/status
-  - minecrafts/finalizers
+  - pods
   verbs:
   - create
   - delete
@@ -45,30 +18,35 @@ rules:
   - patch
   - update
   - watch
-- verbs:
-  - "*"
-  apiGroups:
+- apiGroups:
   - ""
   resources:
-  - "persistentvolumes"
-- verbs:
-  - "*"
-  apiGroups:
-  - ""
+  - pods/status
+  verbs:
+  - get
+- apiGroups:
+  - minecraft.hsmade.com
   resources:
-  - "persistentvolumeclaims"
-  - "services"
-- verbs:
-  - "*"
-  apiGroups:
-  - "apps"
+  - servers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - minecraft.hsmade.com
   resources:
-  - "deployments"
-- verbs:
-  - "*"
-  apiGroups:
-  - "monitoring.coreos.com"
+  - servers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - minecraft.hsmade.com
   resources:
-  - "servicemonitors"
-
-# +kubebuilder:scaffold:rules
+  - servers/status
+  verbs:
+  - get
+  - patch
+  - update

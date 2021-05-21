@@ -1,8 +1,16 @@
-domain: nl
-layout: helm.sdk.operatorframework.io/v1
+domain: hsmade.com
+layout:
+- go.kubebuilder.io/v3
 projectName: minecraft-operator
+repo: github.com/hsmade/minecraft-operator
 resources:
-- group: hsmade
-  kind: Minecraft
-  version: v1alpha1
-version: 3-alpha
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: hsmade.com
+  group: minecraft
+  kind: Server
+  path: github.com/hsmade/minecraft-operator/api/v1
+  version: v1
+version: "3"

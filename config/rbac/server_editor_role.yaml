@@ -1,13 +1,13 @@
-# permissions for end users to edit minecrafts.
+# permissions for end users to edit servers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: minecraft-editor-role
+  name: server-editor-role
 rules:
 - apiGroups:
-  - hsmade.com
+  - minecraft.hsmade.com
   resources:
-  - minecrafts
+  - servers
   verbs:
   - create
   - delete
@@ -17,8 +17,8 @@ rules:
   - update
   - watch
 - apiGroups:
-  - hsmade.com
+  - minecraft.hsmade.com
   resources:
-  - minecrafts/status
+  - servers/status
   verbs:
   - get

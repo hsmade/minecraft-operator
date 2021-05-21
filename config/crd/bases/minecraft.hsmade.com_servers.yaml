@@ -1,0 +1,116 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: servers.minecraft.hsmade.com
+spec:
+  group: minecraft.hsmade.com
+  names:
+    kind: Server
+    listKind: ServerList
+    plural: servers
+    singular: server
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: Server is the Schema for the servers API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ServerSpec defines the desired state of Server
+            properties:
+              enabled:
+                description: Enabled defines if the Server should be running or not.
+                  Defaults to false
+                type: boolean
+              flavor:
+                description: 'Flavor is the minecraft flavor to run. Valid values
+                  are: - "vanilla" (default) - "spigot" - "paper" - "forge"'
+                enum:
+                - vanilla
+                - spigot
+                - paper
+                - forge
+                type: string
+              hostPath:
+                description: HostPath is the path for the Server on the host
+                type: string
+              mods:
+                description: Mods is a list of minecraft mods to be installed on the
+                  Server. Defaults to empty
+                items:
+                  description: Mod defines a minecraft mod to be installed on a Server
+                  properties:
+                    name:
+                      description: Name is the name of the mod
+                      type: string
+                    url:
+                      description: Url is the location where the mod's jar file can
+                        be found
+                      type: string
+                    version:
+                      description: Version is the version of the mod
+                      type: string
+                  required:
+                  - name
+                  - url
+                  - version
+                  type: object
+                type: array
+              version:
+                description: Version is the minecraft version to run. Defaults to
+                  latest
+                type: string
+              worldPath:
+                description: WorldPath is the relative path to the world, inside the
+                  HostPath. Defaults to 'world'
+                type: string
+            required:
+            - hostPath
+            type: object
+          status:
+            description: ServerStatus defines the observed state of Server
+            properties:
+              players:
+                description: Players is the list of online players
+                items:
+                  type: string
+                type: array
+              running:
+                description: Running shows if the Server is running
+                type: boolean
+              thumbnail:
+                description: Thumbnail is base64 of the thumbnail image for the loaded
+                  world
+                type: string
+            required:
+            - running
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -1,0 +1,7 @@
+apiVersion: minecraft.hsmade.com/v1
+kind: Server
+metadata:
+  name: test
+spec:
+  hostPath: /tmp/minecraft-test/
+  enabled: true
