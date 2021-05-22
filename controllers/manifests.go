@@ -22,8 +22,8 @@ var initScriptTemplate string
 // createManifests creates all the needed manifests for the Server instance
 func (r *ServerReconciler) createManifests(ctx context.Context, server *minecraftv1.Server) error {
 	// TODO:
-	// - jar download in initcontainer
-	// - mods download in initcontainer
+	// - jar download DONE
+	// - mods download
 	// - property file -> emptydir + init container for initial values DONE
 	// - eula.txt DONE
 	// - readyness check

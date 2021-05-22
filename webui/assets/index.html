@@ -30,12 +30,15 @@
 
         <md-table-row slot="md-table-row" slot-scope="{ item }">
             <md-table-cell>
-                <md-button v-bind:style="{ backgroundColor: item.status.running?'#00C851':item.spec.enabled?'#ffbb33':'#ff4444' }">
+                <md-button
+                        v-bind:style="{backgroundColor: item.status.running?'#00C851':item.spec.enabled?'#ffbb33':'#ff4444'}"
+                        v-on:click="setServer(item.metadata.name, !item.spec.enabled)"
+                >
                     <md-icon>power_settings_new</md-icon>
                 </md-button>
             </md-table-cell>
             <md-table-cell md-label="Naam" md-sort-by="name">{{ item.metadata.name }}</md-table-cell>
-            <md-table-cell md-label="Plaatje" md-sort-by="status">{{ item.status.image }}</md-table-cell>
+            <md-table-cell md-label="Plaatje" md-sort-by="status"><img v-bind:src="'data:image/png;base64, ' + item.status.image" /></md-table-cell>
             <md-table-cell md-label="Soort" md-sort-by="flavor">{{ item.spec.flavor }}</md-table-cell>
             <md-table-cell md-label="Versie" md-sort-by="version" md-numeric>{{ item.spec.version }}</md-table-cell>
             <md-table-cell md-label="Mode" md-sort-by="gamemoe">{{ item.spec.properties.gamemode }}</md-table-cell>
@@ -78,6 +81,9 @@
 </div>
 </body>
 <script>
+    // TODO:
+    // - sorting of servers list, as the md-table doesn't sort yet
+
     const toLower = text => {
         return text.toString().toLowerCase()
     }
@@ -103,24 +109,34 @@
         },
 
         async created() {
-            // GET request using fetch with async/await
-            const response = await fetch("api/servers");
-            const data = await response.json();
-            if (data["error"]) {
-                this.error = data["error"]
-                return
-            }
-            this.servers = data;
-            this.searched = this.servers
-            data.map(item => this.dialogItem[item.metadata.name] = false)
+            await this.updateData();
+            setInterval(this.updateData.bind(this), 10000)
         },
 
         methods: {
             searchOnTable () {
                 this.searched = searchByName(this.servers, this.search)
             },
-            alert(text) {
-              console.log(text)
+
+            async updateData() {
+                // GET request using fetch with async/await
+                const response = await fetch("api/servers");
+                const data = await response.json();
+                if (data["error"]) {
+                    this.error = data["error"]
+                    return
+                }
+                this.servers = data;
+                this.searched = this.servers
+                data.map(item => this.dialogItem[item.metadata.name] = false)
+            },
+
+            async setServer (server, enabled) {
+                const response = await fetch(`api/server?server=${server}&enabled=${enabled}`)
+                const data = await response.json();
+                if (data["error"]) {
+                    this.error = data["error"]
+                }
             }
         }
     })
@@ -128,15 +144,6 @@
 <style lang="scss" scoped>
     .md-field {
         max-width: 300px;
-    }
-    .md-danger {
-        color: #ff4444;
-    }
-    .md-warning {
-        color: #ffbb33;
-    }
-    .md-success {
-        color: #00C851;
     }
 </style>
 </html>

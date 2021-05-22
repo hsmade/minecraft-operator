@@ -19,6 +19,7 @@ func Run(addr string, kClient client.Client, Log logr.Logger) error {
 	}
 
 	api := Api{Client: kClient, Log: Log.WithName("api")}
+	http.HandleFunc("/api/server", api.setServer)
 	http.HandleFunc("/api/servers", api.getServers)
 	http.Handle("/", http.FileServer(http.FS(sub)))
 	return http.ListenAndServe(addr, nil)

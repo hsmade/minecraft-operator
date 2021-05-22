@@ -54,6 +54,18 @@ var (
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
+// TODO:
+// - manifest generator per object
+// - if we're disabled, delete and ignore not found, or find and delete if found -> return with requeue of 30s
+// - always generate the manifests
+// - find the live ones
+// - if it's missing, submit -> requeue 10s
+// - if it's there, compare
+// - if it's different, patch -> requeue 10s
+// - get liveness -> update status
+// - get thumbnail -> update status
+// - return with requeue of 10s
+
 func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("server", req.NamespacedName)
 
