@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+cd /data
+
+echo "Linking config files"
+ln -vsf /config/* .
+
+echo "Downloading server.jar"
+curl -sv {{ .JarSite }}/{{ .Flavor }}/server-{{ .Version }}.jar > server.jar
+
+echo "Copying in server.properties file"
+rm server.properties
+cp -vf /config/server.properties .
+
+echo "Directory contents:"
+ls -ltr
+
+echo "Starting server"
+exec java -Xmx{{ .MaxMemory }}M -Xms{{ .InitMemory }}M -jar server.jar

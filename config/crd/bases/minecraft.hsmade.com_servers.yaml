@@ -52,6 +52,29 @@ spec:
               hostPath:
                 description: HostPath is the path for the Server on the host
                 type: string
+              hostPort:
+                description: HostPort defines the host port to bind to. Defaults to
+                  disabled
+                format: int32
+                type: integer
+              image:
+                description: Image is the docker image to run. It should have a shell,
+                  curl and, of course, java
+                type: string
+              initMemoryMB:
+                description: Initial memory (Xms), in MB
+                format: int32
+                type: integer
+              jarSite:
+                description: 'The site to get the server.jar from. It should have
+                  these in a directory named after the flavor, and the files should
+                  be named server-<version>.jar. So for the vanilla 1.16.5 the path
+                  is: <JarSite>/vanilla/server-1.16.5.jar'
+                type: string
+              maxMemoryMB:
+                description: Max memory (Xmx), in MB
+                format: int32
+                type: integer
               mods:
                 description: Mods is a list of minecraft mods to be installed on the
                   Server. Defaults to empty
@@ -74,6 +97,29 @@ spec:
                   - version
                   type: object
                 type: array
+              properties:
+                description: Properties file settings
+                properties:
+                  difficulty:
+                    type: string
+                  gamemode:
+                    type: string
+                  motd:
+                    type: string
+                  spawn-animals:
+                    type: boolean
+                  spawn-monsters:
+                    type: boolean
+                  spawn-npcs:
+                    type: boolean
+                required:
+                - difficulty
+                - gamemode
+                - motd
+                - spawn-animals
+                - spawn-monsters
+                - spawn-npcs
+                type: object
               version:
                 description: Version is the minecraft version to run. Defaults to
                   latest
@@ -84,6 +130,10 @@ spec:
                 type: string
             required:
             - hostPath
+            - image
+            - initMemoryMB
+            - jarSite
+            - maxMemoryMB
             type: object
           status:
             description: ServerStatus defines the observed state of Server

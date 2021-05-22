@@ -30,6 +30,9 @@ type ServerSpec struct {
 	// HostPath is the path for the Server on the host
 	HostPath string `json:"hostPath"`
 
+	// Image is the docker image to run. It should have a shell, curl and, of course, java
+	Image string `json:"image"`
+
 	// WorldPath is the relative path to the world, inside the HostPath. Defaults to 'world'
 	// +optional
 	WorldPath string `json:"worldPath,omitempty"`
@@ -54,7 +57,24 @@ type ServerSpec struct {
 	// +optional
 	Flavor Flavor `json:"flavor,omitempty"`
 
-	// TODO: property file settings
+	// Properties file settings
+	// +optional
+	Properties Properties `json:"properties,omitempty"`
+
+	// Max memory (Xmx), in MB
+	MaxMemory int32 `json:"maxMemoryMB"`
+
+	// Initial memory (Xms), in MB
+	InitMemory int32 `json:"initMemoryMB"`
+
+	// The site to get the server.jar from. It should have these in a directory named after the flavor, and the files
+	// should be named server-<version>.jar. So for the vanilla 1.16.5 the path is:
+	// <JarSite>/vanilla/server-1.16.5.jar
+	JarSite string `json:"jarSite"`
+
+	// HostPort defines the host port to bind to. Defaults to disabled
+	// +optional
+	HostPort int32 `json:"hostPort,omitempty"`
 }
 
 // Flavor describes the minecraft server flavor to be used.
@@ -79,6 +99,16 @@ type Mod struct {
 
 	// Url is the location where the mod's jar file can be found
 	Url string `json:"url"`
+}
+
+// Properties defines the entries for server.properties that we support
+type Properties struct {
+	GameMode      string `json:"gamemode"`
+	Difficulty    string `json:"difficulty"`
+	SpawnMonsters bool   `json:"spawn-monsters"`
+	SpawnNpcs     bool   `json:"spawn-npcs"`
+	SpawnAnimals  bool   `json:"spawn-animals"`
+	Motd          string `json:"motd"`
 }
 
 // ServerStatus defines the observed state of Server

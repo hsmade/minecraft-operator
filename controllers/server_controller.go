@@ -51,10 +51,6 @@ var (
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Server object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
@@ -73,7 +69,12 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 	log.Info("got server", "server", server.Name)
 
-	defer r.Status().Update(ctx, &server)
+	defer func() {
+		err := r.Status().Update(ctx, &server)
+		if err != nil {
+			log.Error(err, "failed to update server status field")
+		}
+	}()
 
 	var pods corev1.PodList
 	if err := r.List(ctx, &pods, client.InNamespace(req.Namespace), client.MatchingFields{serverOwnerKey: req.Name}); err != nil {
@@ -97,6 +98,10 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				log.V(0).Info("deleted extraneous pod", "pod", pod)
 			}
 		}
+	}
+
+	if !server.Spec.Enabled {
+		return ctrl.Result{}, nil
 	}
 
 	server.Status.Running = false // default
@@ -152,143 +157,4 @@ func (r *ServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&minecraftv1.Server{}).
 		Complete(r)
-}
-
-// createManifests creates all the needed manifests for the Server instance
-func (r *ServerReconciler) createManifests(ctx context.Context, server *minecraftv1.Server) error {
-	// TODO:
-	// - jar download in initcontainer
-	// - mods download in initcontainer
-	// - property file -> emptydir + init container for initial values
-	// - eula.txt DONEq
-	// - readyness check
-	// - liveness check
-	log := r.Log.WithValues("server", server.Name)
-
-	serverConfigMap := corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      make(map[string]string),
-			Annotations: make(map[string]string),
-			Name:        server.Name,
-			Namespace:   server.Namespace,
-		},
-		Data: map[string]string{
-			"eula.txt": "eula=true",
-			"server.properties": `max-tick-time=60000
-generator-settings=
-force-gamemode=false
-allow-nether=true
-gamemode=0
-enable-query=false
-player-idle-timeout=0
-difficulty=1
-spawn-monsters=true
-op-permission-level=4
-pvp=true
-snooper-enabled=true
-level-type=DEFAULT
-hardcore=false
-enable-command-block=true
-max-players=20
-network-compression-threshold=256
-resource-pack-sha1=
-max-world-size=29999984
-server-port=25571
-server-ip=
-spawn-npcs=true
-allow-flight=true
-level-name=world
-view-distance=10
-resource-pack=
-spawn-animals=true
-white-list=false
-generate-structures=true
-online-mode=true
-max-build-height=256
-level-seed=
-prevent-proxy-connections=false
-use-native-transport=true
-motd=TNT
-enable-rcon=false`,
-		},
-	}
-
-	if err := ctrl.SetControllerReference(server, &serverConfigMap, r.Scheme); err != nil {
-		log.Error(err, "failed to set owner reference")
-		return err
-	}
-
-	if err := r.Create(ctx, &serverConfigMap); err != nil {
-		log.Error(err, "unable to create configMap for minecraft Server", "configMap", serverConfigMap)
-		return err // FIXME: ignore exists
-	}
-
-	dirType := corev1.HostPathDirectory
-	serverPod := corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      make(map[string]string),
-			Annotations: make(map[string]string),
-			Name:        server.Name,
-			Namespace:   server.Namespace,
-		},
-		Spec: corev1.PodSpec{
-			Volumes: []corev1.Volume{
-				{
-					Name: "data",
-					VolumeSource: corev1.VolumeSource{
-						HostPath: &corev1.HostPathVolumeSource{
-							Path: server.Spec.HostPath,
-							Type: &dirType,
-						},
-					},
-				},
-				{
-					Name: "config",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: server.Name,
-							},
-						},
-					},
-				},
-			},
-			Containers: []corev1.Container{{
-				Name:  "minecraft",
-				Image: "adoptopenjdk:8-jre-hotspot",
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      "data",
-						MountPath: "/data",
-					},
-					{
-						Name:      "config",
-						SubPath:   "eula.txt",
-						MountPath: "/data/eula.txt",
-					},
-					{
-						Name:      "config",
-						SubPath:   "server.properties",
-						MountPath: "/data/server.properties",
-					},
-				},
-				Command:    []string{"java", "-jar", "server.jar"},
-				WorkingDir: "/data",
-			}},
-			RestartPolicy: corev1.RestartPolicyAlways,
-		},
-	}
-
-	if err := ctrl.SetControllerReference(server, &serverPod, r.Scheme); err != nil {
-		log.Error(err, "failed to set owner reference")
-		return err
-	}
-
-	if err := r.Create(ctx, &serverPod); err != nil {
-		log.Error(err, "unable to create Pod for minecraft Server", "pod", serverPod)
-		return err
-	}
-	log.Info("created pod for minecraft server", "pod", serverPod)
-
-	return nil
 }

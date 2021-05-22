@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft Server Operator</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <meta content="width=device-width,initial-scale=1,minimal-ui" name="viewport">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons">
+    <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/vue-material.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/theme/default.css">
+    <script src="https://unpkg.com/vue-material"></script>
+</head>
+<body>
+<div id="app">
+    <md-table v-model="searched" md-sort="name" md-sort-order="asc" md-card md-fixed-header>
+        <md-table-toolbar>
+            <div class="md-toolbar-section-start">
+                <h1 class="md-title">Servers</h1>
+            </div>
+
+            <md-field md-clearable class="md-toolbar-section-end">
+                <md-input placeholder="Search by name..." v-model="search" @input="searchOnTable" />
+            </md-field>
+        </md-table-toolbar>
+
+        <md-table-empty-state
+                md-label="No Servers found"
+                :md-description="`No Servers found for this '${search}' query. Try a different search term.`">
+        </md-table-empty-state>
+
+        <md-table-row slot="md-table-row" slot-scope="{ item }">
+            <md-table-cell>
+                <md-button v-bind:style="{ backgroundColor: item.status.running?'#00C851':item.spec.enabled?'#ffbb33':'#ff4444' }">
+                    <md-icon>power_settings_new</md-icon>
+                </md-button>
+            </md-table-cell>
+            <md-table-cell md-label="Naam" md-sort-by="name">{{ item.metadata.name }}</md-table-cell>
+            <md-table-cell md-label="Plaatje" md-sort-by="status">{{ item.status.image }}</md-table-cell>
+            <md-table-cell md-label="Soort" md-sort-by="flavor">{{ item.spec.flavor }}</md-table-cell>
+            <md-table-cell md-label="Versie" md-sort-by="version" md-numeric>{{ item.spec.version }}</md-table-cell>
+            <md-table-cell md-label="Mode" md-sort-by="gamemoe">{{ item.spec.properties.gamemode }}</md-table-cell>
+            <md-table-cell md-label="Poort" md-sort-by="hostport" md-numeric>{{ item.spec.hostPort }}</md-table-cell>
+            <md-table-cell>
+                <md-button v-on:click="dialogItem = item; dialog = true"><md-icon>info</md-icon></md-button>
+            </md-table-cell>
+        </md-table-row>
+    </md-table>
+    <md-dialog :md-active.sync="dialog">
+        <md-dialog-title v-if="dialogItem.metadata">
+            Server: <b>{{ dialogItem.metadata.name }}</b>
+        </md-dialog-title>
+        <md-dialog-content>
+            <md-list v-if="dialogItem.metadata">
+                <md-subheader>Metadata</md-subheader>
+                <md-list-item v-for="(value, key) in dialogItem.metadata" v-bind:key="key">
+                    <span><b>{{ key }}:</b> {{ value }}</span>
+                </md-list-item>
+
+                <md-subheader>Spec</md-subheader>
+                <md-list-item v-for="(value, key) in dialogItem.spec" v-bind:key="key">
+                    <span v-if="key != 'properties'"><b>{{ key }}:</b> {{ value }}</span>
+                </md-list-item>
+
+                <md-subheader>Properties</md-subheader>
+                <md-list-item v-for="(value, key) in dialogItem.spec.properties" v-bind:key="key">
+                    <span><b>{{ key }}:</b> {{ value }}</span>
+                </md-list-item>
+
+                <md-subheader>Status</md-subheader>
+                <md-list-item v-for="(value, key) in dialogItem.status" v-bind:key="key">
+                    <span><b>{{ key }}:</b> {{ value }}</span>
+                </md-list-item>
+
+            </md-list>
+        </md-dialog-content>
+    </md-dialog>
+
+</div>
+</body>
+<script>
+    const toLower = text => {
+        return text.toString().toLowerCase()
+    }
+
+    const searchByName = (items, term) => {
+        if (term) {
+            return items.filter(item => toLower(item.metadata.name).includes(toLower(term)))
+        }
+
+        return items
+    }
+
+    Vue.use(VueMaterial.default)
+    let app = new Vue({
+        el: '#app',
+        data: {
+            search: null,
+            searched: [],
+            servers: [],
+            error: null,
+            dialogItem: {},
+            dialog: false
+        },
+
+        async created() {
+            // GET request using fetch with async/await
+            const response = await fetch("api/servers");
+            const data = await response.json();
+            if (data["error"]) {
+                this.error = data["error"]
+                return
+            }
+            this.servers = data;
+            this.searched = this.servers
+            data.map(item => this.dialogItem[item.metadata.name] = false)
+        },
+
+        methods: {
+            searchOnTable () {
+                this.searched = searchByName(this.servers, this.search)
+            },
+            alert(text) {
+              console.log(text)
+            }
+        }
+    })
+</script>
+<style lang="scss" scoped>
+    .md-field {
+        max-width: 300px;
+    }
+    .md-danger {
+        color: #ff4444;
+    }
+    .md-warning {
+        color: #ffbb33;
+    }
+    .md-success {
+        color: #00C851;
+    }
+</style>
+</html>

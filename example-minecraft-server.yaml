@@ -1,7 +1,43 @@
 apiVersion: minecraft.hsmade.com/v1
 kind: Server
 metadata:
-  name: test
+  name: test-on
 spec:
   hostPath: /tmp/minecraft-test/
+  image: adoptopenjdk:8-jre-hotspot
   enabled: true
+  flavor: vanilla
+  version: 1.16.5
+  maxMemoryMB: 1024
+  initMemoryMB: 1024
+  jarSite: "https://hsmade.com/minecraft"
+  hostPort: 25699
+  properties:
+    motd: mijn server
+    gamemode: creative
+    difficulty: peaceful
+    spawn-animals: true
+    spawn-npcs: true
+    spawn-monsters: true
+---
+apiVersion: minecraft.hsmade.com/v1
+kind: Server
+metadata:
+  name: test-off
+spec:
+  hostPath: /tmp/minecraft-test/
+  image: adoptopenjdk:8-jre-hotspot
+  enabled: false
+  flavor: forge
+  version: 1.14.4
+  maxMemoryMB: 1024
+  initMemoryMB: 1024
+  jarSite: "https://hsmade.com/minecraft"
+  hostPort: 25698
+  properties:
+    motd: mijn server - uit
+    gamemode: creative
+    difficulty: peaceful
+    spawn-animals: true
+    spawn-npcs: true
+    spawn-monsters: true
