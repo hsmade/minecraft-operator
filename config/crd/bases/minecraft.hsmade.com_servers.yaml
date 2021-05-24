@@ -162,6 +162,10 @@ spec:
           status:
             description: ServerStatus defines the observed state of Server
             properties:
+              idleTime:
+                description: IdleTime is the timestamp when we last saw players
+                format: int64
+                type: integer
               lastPong:
                 description: LastPong is the timestamp of the last checked pong
                 format: int64

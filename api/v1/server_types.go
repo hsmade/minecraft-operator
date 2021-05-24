@@ -148,6 +148,10 @@ type ServerStatus struct {
 	//LastPong is the timestamp of the last checked pong
 	// +optional
 	LastPong int64 `json:"lastPong,omitempty"`
+
+	//IdleTime is the timestamp when we last saw players
+	// +optional
+	IdleTime int64 `json:"idleTime,omitempty"`
 }
 
 //+kubebuilder:object:root=true

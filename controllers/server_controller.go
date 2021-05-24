@@ -20,7 +20,6 @@ import (
 	"context"
 	"github.com/hsmade/minecraft-operator/loglevels"
 	v1 "k8s.io/api/apps/v1"
-	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
@@ -48,37 +47,18 @@ var (
 //+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=servers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=servers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=servers/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=pods/status,verbs=get
+//+kubebuilder:rbac:groups="apps",resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="apps",resources=deployments/status,verbs=get
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=configmaps/status,verbs=get
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=services/status,verbs=get
-//+kubebuilder:rbac:groups="",resources=ingresses,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=ingresses/status,verbs=get
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
-// TODO:
-// - manifest generator per object
-// - disable if no players for x time
-// - figure out how to properly use logr, error seems to panic. Also want to log in debug
-// - also delete cm on disable
-// Structure:
-// - fetch server
-// - if server is disabled, delete manifests and ignore not found, or find and delete if found -> return with requeue of 30s
-// - always generate the manifests
-// - find the live ones
-// - if it's missing, submit -> requeue 10s
-// - if it's there, compare
-// - if it's different, patch -> requeue 10s
-// - get liveness -> update status
-// - get thumbnail -> update status
-// - enforce idleTimeoutSeconds
-// - return with requeue of 10s
 func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("server", req.NamespacedName)
 	log.V(loglevels.Verbose).Info("start reconciling loop")
@@ -113,25 +93,27 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	//idleTime, err := r.UpdateStatus(ctx, log, &server) // triggers requeue
-	//if err != nil {
-	//	log.V(loglevels.Error).Error(err, "failed to update Server status, retrying in 30s")
-	//	return ctrl.Result{RequeueAfter: 30 * time.Second}, err
-	//}
+	err = r.UpdateStatus(ctx, log, &server) // triggers requeue
+	if err != nil {
+		log.V(loglevels.Error).Error(err, "failed to update Server status, retrying in 30s")
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	}
 
-	//if server.Spec.IdleTimeoutSeconds > 0 {
-	//	log.V(loglevels.Flow).Info("checking for idle timeout")
-	//	log.V(loglevels.Trace).Info("checking for idle timeout", "idleTime",
-	//		idleTime, "IdleTimeoutSeconds", server.Spec.IdleTimeoutSeconds)
-	//	if idleTime > server.Spec.IdleTimeoutSeconds {
-	//		log.V(loglevels.Info).Info("server idle timeout reached, shutting down Pod")
-	//		err = r.DisableServer(ctx, log, &server)
-	//		if err != nil {
-	//			log.V(loglevels.Error).Error(err, "failed to shutdown Pod, retrying in 30s")
-	//			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
-	//		}
-	//	}
-	//}
+	if server.Spec.IdleTimeoutSeconds > 0 {
+		log.V(loglevels.Flow).Info("checking for idle timeout")
+		log.V(loglevels.Trace).Info("checking for idle timeout", "idleTime",
+			server.Status.IdleTime, "IdleTimeoutSeconds", server.Spec.IdleTimeoutSeconds)
+		if server.Status.IdleTime > server.Spec.IdleTimeoutSeconds {
+			log.V(loglevels.Info).Info("server idle timeout reached, shutting down Pod")
+			log.V(loglevels.Verbose).Info("setting server enable to false")
+			server.Spec.Enabled = false
+			err = r.Client.Update(ctx, &server)
+			if err != nil {
+				log.V(loglevels.Error).Error(err, "failed to update Server, retrying in 30s")
+				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+			}
+		}
+	}
 
 	// return for requeue
 	return ctrl.Result{RequeueAfter: 30 * time.Second}, err
@@ -282,24 +264,6 @@ func (r *ServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// grab the job object, extract the owner...
 		svc := rawObj.(*corev1.Service)
 		owner := metav1.GetControllerOf(svc)
-		if owner == nil {
-			return nil
-		}
-		// ...make sure it's a Pod...
-		if owner.APIVersion != apiGVStr || owner.Kind != "Server" {
-			return nil
-		}
-
-		// ...and if so, return it
-		return []string{owner.Name}
-	}); err != nil {
-		return err
-	}
-
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1beta1.Ingress{}, serverOwnerKey, func(rawObj client.Object) []string {
-		// grab the job object, extract the owner...
-		ingress := rawObj.(*v1beta1.Ingress)
-		owner := metav1.GetControllerOf(ingress)
 		if owner == nil {
 			return nil
 		}
