@@ -99,7 +99,7 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	if server.Spec.IdleTimeoutSeconds > 0 {
+	if server.Spec.Enabled && server.Spec.IdleTimeoutSeconds > 0 {
 		log.V(loglevels.Flow).Info("checking for idle timeout")
 		log.V(loglevels.Trace).Info("checking for idle timeout", "idleTime",
 			server.Status.IdleTime, "IdleTimeoutSeconds", server.Spec.IdleTimeoutSeconds)

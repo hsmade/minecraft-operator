@@ -38,7 +38,7 @@
                 </md-button>
             </md-table-cell>
             <md-table-cell md-label="Naam" md-sort-by="name">{{ item.spec.properties.motd }}</md-table-cell>
-            <md-table-cell md-label="Plaatje" md-sort-by="status"><img v-bind:src="'data:image/png;base64, ' + item.status.image" /></md-table-cell>
+            <md-table-cell md-label="Plaatje" md-sort-by="status"><img v-bind:src="item.status.thumbnail"/></md-table-cell>
             <md-table-cell md-label="Spelers" md-sort-by="players">{{ item.status.players }}</md-table-cell>
             <md-table-cell md-label="Soort" md-sort-by="flavor">{{ item.spec.flavor }}</md-table-cell>
             <md-table-cell md-label="Versie" md-sort-by="version" md-numeric>{{ item.spec.version }}</md-table-cell>

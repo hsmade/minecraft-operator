@@ -20,9 +20,9 @@ See the TODO/FIXME annotations in the code.
 Also:
 
  - write tests
- - fix thumbnails
  - implement ingress as alternative to hostPort
  - fix forge, needs additional files?
+ - have some visual feedback on starting
 
 ### Log levels
 This project uses [logr](https://github.com/go-logr/logr), which has no log levels like `Debug` or `Warning`.
