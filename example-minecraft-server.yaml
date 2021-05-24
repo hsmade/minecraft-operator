@@ -1,6 +1,30 @@
 apiVersion: minecraft.hsmade.com/v1
 kind: Server
 metadata:
+  name: test-a
+  namespace: minecraft
+spec:
+  hostPath: /tmp/minecraft-test/
+  image: adoptopenjdk:8-jre-hotspot
+  enabled: true
+  flavor: vanilla
+  version: 1.16.5
+  maxMemoryMB: 1024
+  initMemoryMB: 1024
+  jarSite: "https://hsmade.com/minecraft"
+  nodePort: true
+  idleTimeoutSeconds: 10
+  properties:
+    motd: Abc
+    gamemode: creative
+    difficulty: peaceful
+    spawn-animals: false
+    spawn-npcs: true
+    spawn-monsters: true
+---
+apiVersion: minecraft.hsmade.com/v1
+kind: Server
+metadata:
   name: test-on
   namespace: minecraft
 spec:

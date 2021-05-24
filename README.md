@@ -21,7 +21,6 @@ Also:
 
  - write tests
  - fix thumbnails
- - fix ui ordering?
  - implement ingress as alternative to hostPort
  - fix forge, needs additional files?
 

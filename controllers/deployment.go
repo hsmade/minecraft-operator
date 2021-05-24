@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	minecraftv1 "github.com/hsmade/minecraft-operator/api/v1"
 	"github.com/hsmade/minecraft-operator/loglevels"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -21,8 +22,6 @@ import (
 // - mods download
 // - readiness check
 // - liveliness check
-// FIXME:
-// - deployment keeps getting replaced
 func (r *ServerReconciler) ReconcileDeployment(ctx context.Context, log logr.Logger, server *minecraftv1.Server) error {
 	log.V(loglevels.Verbose).Info("start reconciling of Deployment")
 
@@ -68,11 +67,17 @@ func (r *ServerReconciler) ReconcileDeployment(ctx context.Context, log logr.Log
 	}
 
 	// patch the Deployment, if needed
+	// only check for things we can influence
 	log.V(loglevels.Flow).Info("comparing Deployment data with the rendered data")
-	if !reflect.DeepEqual(deployment.Spec, DeploymentList.Items[0].Spec) {
+	if !reflect.DeepEqual(deployment.Spec.Template.Spec.Containers[0].Ports[0].HostPort, DeploymentList.Items[0].Spec.Template.Spec.Containers[0].Ports[0].HostPort) ||
+		!reflect.DeepEqual(deployment.Spec.Template.Spec.Containers[0].Image, DeploymentList.Items[0].Spec.Template.Spec.Containers[0].Image) ||
+		!reflect.DeepEqual(deployment.Spec.Replicas, DeploymentList.Items[0].Spec.Replicas) ||
+		!reflect.DeepEqual(deployment.ObjectMeta.Annotations["configHash"], DeploymentList.Items[0].ObjectMeta.Annotations["configHash"]) ||
+		!reflect.DeepEqual(deployment.Spec.Template.Spec.Containers[0].Command, DeploymentList.Items[0].Spec.Template.Spec.Containers[0].Command) {
 		log.V(loglevels.Info).Info("replacing Deployment")
 		log.V(loglevels.Trace).Info("replacing Deployment", "rendered", deployment.Spec, "found", DeploymentList.Items[0].Spec)
 		DeploymentList.Items[0].Spec = deployment.Spec
+		DeploymentList.Items[0].ObjectMeta.Annotations["configHash"] = deployment.ObjectMeta.Annotations["configHash"]
 		err = r.Client.Update(ctx, &DeploymentList.Items[0])
 		if err != nil {
 			return errors.Wrap(err, "replacing Deployment")
@@ -91,6 +96,13 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 	var replicas int32 = 0
 	if server.Spec.Enabled {
 		replicas = 1
+	}
+
+	log.V(loglevels.Flow).Info("generating hash of spec")
+	configHash, err := hashstructure.Hash(server.Spec, hashstructure.FormatV2, nil)
+	if err != nil {
+		log.V(loglevels.Info).Info("failed to generate hash from spec", "error", err)
+		configHash = 0
 	}
 
 	dirType := corev1.HostPathDirectory
@@ -118,9 +130,11 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 						"app": fmt.Sprintf("minecraft-operator-server-%s", server.Name),
 						// FIXME: need more
 					},
-					Annotations: make(map[string]string),
-					Name:        server.Name,
-					Namespace:   server.Namespace,
+					Annotations: map[string]string{
+						"checksum/config": fmt.Sprintf("%d", configHash),
+					},
+					Name:      server.Name,
+					Namespace: server.Namespace,
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
