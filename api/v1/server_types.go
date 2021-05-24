@@ -61,14 +61,19 @@ type ServerSpec struct {
 	// <JarSite>/vanilla/server-1.16.5.jar
 	JarSite string `json:"jarSite"`
 
+	// NodePort will make the service of type nodePort, if set. Else the service will be of type ClusterIP.
+	// You can find the chosen port by getting the service object through kubectl
+	// +optional
+	NodePort bool `json:"nodePort,omitempty"`
+
 	// HostPort defines the host port to bind to. Defaults to disabled
 	// +optional
-	HostPort int32 `json:"hostPort,omitempty"`
+	HostPort int32 `json:"hostPort"`
 
 	// IdleTimeoutSeconds will, when set, disable the server after the server has been without users for the timeout period.
 	// When it's not set (which is the default), it will not automatically disable the server, and it will keep running.
 	// +optional
-	IdleTimeoutSeconds int64 `json:"idleTimeoutSeconds"`
+	IdleTimeoutSeconds int64 `json:"idleTimeoutSeconds,omitempty"`
 }
 
 // Flavor describes the minecraft server flavor to be used.
@@ -137,10 +142,12 @@ type ServerStatus struct {
 	Thumbnail string `json:"thumbnail,omitempty"`
 
 	// Players is the list of online players
-	Players []string `json:"players"`
+	// +optional
+	Players []string `json:"players,omitempty"`
 
 	//LastPong is the timestamp of the last checked pong
-	LastPong int64 `json:"lastPong"`
+	// +optional
+	LastPong int64 `json:"lastPong,omitempty"`
 }
 
 //+kubebuilder:object:root=true

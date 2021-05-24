@@ -32,12 +32,12 @@
             <md-table-cell>
                 <md-button
                         v-bind:style="{backgroundColor: item.status.running?'#00C851':item.spec.enabled?'#ffbb33':'#ff4444'}"
-                        v-on:click="setServer(item.metadata.name, !item.spec.enabled)"
+                        v-on:click="setServer(item.metadata.name, item.metadata.namespace, !item.spec.enabled)"
                 >
                     <md-icon>power_settings_new</md-icon>
                 </md-button>
             </md-table-cell>
-            <md-table-cell md-label="Naam" md-sort-by="name">{{ item.metadata.name }}</md-table-cell>
+            <md-table-cell md-label="Naam" md-sort-by="name">{{ item.spec.properties.motd }}</md-table-cell>
             <md-table-cell md-label="Plaatje" md-sort-by="status"><img v-bind:src="'data:image/png;base64, ' + item.status.image" /></md-table-cell>
             <md-table-cell md-label="Soort" md-sort-by="flavor">{{ item.spec.flavor }}</md-table-cell>
             <md-table-cell md-label="Versie" md-sort-by="version" md-numeric>{{ item.spec.version }}</md-table-cell>
@@ -131,8 +131,8 @@
                 data.map(item => this.dialogItem[item.metadata.name] = false)
             },
 
-            async setServer (server, enabled) {
-                const response = await fetch(`api/server?server=${server}&enabled=${enabled}`)
+            async setServer (server, namespace, enabled) {
+                const response = await fetch(`api/server?server=${server}&namespace=${namespace}&enabled=${enabled}`)
                 const data = await response.json();
                 if (data["error"]) {
                     this.error = data["error"]

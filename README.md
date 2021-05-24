@@ -23,6 +23,7 @@ Also:
  - write tests
  - fix thumbnails
  - fix ui ordering
+ - implement ingress as alternative to hostPort
 
 ### Log levels
 This project uses [logr](https://github.com/go-logr/logr), which has no log levels like `Debug` or `Warning`.

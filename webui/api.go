@@ -50,6 +50,14 @@ func (a *Api) setServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	nameSpace, ok := r.URL.Query()["namespace"]
+	if !ok || len(serverName[0]) < 1 {
+		err := errors.New("missing namespace parameter")
+		a.Log.Info("ERROR parsing parameters", "error", err)
+		returnError(err, w)
+		return
+	}
+
 	enabledString, ok := r.URL.Query()["enabled"]
 	if !ok || len(enabledString[0]) < 1 {
 		err := errors.New("missing enabled parameter")
@@ -71,7 +79,7 @@ func (a *Api) setServer(w http.ResponseWriter, r *http.Request) {
 	var server v1.Server
 	err = a.Client.Get(context.Background(), types.NamespacedName{
 		Name:      serverName[0],
-		Namespace: "default", // FIXME: remove hard-coding
+		Namespace: nameSpace[0],
 	}, &server)
 	if err != nil {
 		err := errors.Wrap(err, "retrieving Server object")

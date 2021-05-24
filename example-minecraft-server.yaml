@@ -2,6 +2,7 @@ apiVersion: minecraft.hsmade.com/v1
 kind: Server
 metadata:
   name: test-on
+  namespace: minecraft
 spec:
   hostPath: /tmp/minecraft-test/
   image: adoptopenjdk:8-jre-hotspot
@@ -11,7 +12,7 @@ spec:
   maxMemoryMB: 1024
   initMemoryMB: 1024
   jarSite: "https://hsmade.com/minecraft"
-  hostPort: 25699
+  nodePort: true
   properties:
     motd: mijn server
     gamemode: creative
@@ -24,6 +25,7 @@ apiVersion: minecraft.hsmade.com/v1
 kind: Server
 metadata:
   name: test-off
+  namespace: minecraft
 spec:
   hostPath: /tmp/minecraft-test/
   image: adoptopenjdk:8-jre-hotspot
@@ -33,7 +35,7 @@ spec:
   maxMemoryMB: 1024
   initMemoryMB: 1024
   jarSite: "https://hsmade.com/minecraft"
-  hostPort: 25698
+  hostPort: 25699
   properties:
     motd: mijn server - uit
     gamemode: creative

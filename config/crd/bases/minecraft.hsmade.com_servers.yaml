@@ -57,6 +57,13 @@ spec:
                   disabled
                 format: int32
                 type: integer
+              idleTimeoutSeconds:
+                description: IdleTimeoutSeconds will, when set, disable the server
+                  after the server has been without users for the timeout period.
+                  When it's not set (which is the default), it will not automatically
+                  disable the server, and it will keep running.
+                format: int64
+                type: integer
               image:
                 description: Image is the docker image to run. It should have a shell,
                   curl and, of course, java
@@ -97,6 +104,11 @@ spec:
                   - version
                   type: object
                 type: array
+              nodePort:
+                description: NodePort will make the service of type nodePort, if set.
+                  Else the service will be of type ClusterIP. You can find the chosen
+                  port by getting the service object through kubectl
+                type: boolean
               properties:
                 description: Properties file settings
                 properties:
@@ -167,8 +179,6 @@ spec:
                   world
                 type: string
             required:
-            - lastPong
-            - players
             - running
             type: object
         type: object
