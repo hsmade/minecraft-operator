@@ -13,6 +13,7 @@ spec:
   initMemoryMB: 1024
   jarSite: "https://hsmade.com/minecraft"
   nodePort: true
+  idleTimeoutSeconds: 10
   properties:
     motd: mijn server
     gamemode: creative
@@ -30,12 +31,13 @@ spec:
   hostPath: /tmp/minecraft-test/
   image: adoptopenjdk:8-jre-hotspot
   enabled: false
-  flavor: forge
+  flavor: vanilla
   version: 1.14.4
   maxMemoryMB: 1024
   initMemoryMB: 1024
   jarSite: "https://hsmade.com/minecraft"
   hostPort: 25699
+  idleTimeoutSeconds: 10
   properties:
     motd: mijn server - uit
     gamemode: creative

@@ -103,7 +103,7 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		log.V(loglevels.Flow).Info("checking for idle timeout")
 		log.V(loglevels.Trace).Info("checking for idle timeout", "idleTime",
 			server.Status.IdleTime, "IdleTimeoutSeconds", server.Spec.IdleTimeoutSeconds)
-		if server.Status.IdleTime > server.Spec.IdleTimeoutSeconds {
+		if server.Status.IdleTime > 0 && time.Now().Unix()-server.Status.IdleTime > server.Spec.IdleTimeoutSeconds {
 			log.V(loglevels.Info).Info("server idle timeout reached, shutting down Pod")
 			log.V(loglevels.Verbose).Info("setting server enable to false")
 			server.Spec.Enabled = false

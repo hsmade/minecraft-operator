@@ -126,6 +126,7 @@
                     this.error = data["error"]
                     return
                 }
+                data.sort(((a,b) => (a.metadata.name > b.metadata.name) ? 1 : ((b.metadata.name > a.metadata.name) ? -1 : 0)))
                 this.servers = data;
                 this.searched = this.servers
                 data.map(item => this.dialogItem[item.metadata.name] = false)

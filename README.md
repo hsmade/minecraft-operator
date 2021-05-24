@@ -19,11 +19,11 @@ object, to let it shut down after the last player left, and the said timeout has
 See the TODO/FIXME annotations in the code.
 Also:
 
- - refactor controller
  - write tests
  - fix thumbnails
- - fix ui ordering
+ - fix ui ordering?
  - implement ingress as alternative to hostPort
+ - fix forge, needs additional files?
 
 ### Log levels
 This project uses [logr](https://github.com/go-logr/logr), which has no log levels like `Debug` or `Warning`.
