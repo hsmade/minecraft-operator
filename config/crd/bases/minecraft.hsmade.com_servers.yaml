@@ -42,7 +42,7 @@ spec:
                 type: boolean
               flavor:
                 description: 'Flavor is the minecraft flavor to run. Valid values
-                  are: - "vanilla" (default) - "spigot" - "paper" - "forge"'
+                  are: - "vanilla" - "spigot" - "paper" - "forge"'
                 enum:
                 - vanilla
                 - spigot
@@ -101,8 +101,21 @@ spec:
                 description: Properties file settings
                 properties:
                   difficulty:
+                    description: Difficulty describes the minecraft server difficulty
+                      to be used.
+                    enum:
+                    - peaceful
+                    - easy
+                    - normal
+                    - hard
                     type: string
                   gamemode:
+                    description: GameMode describes the minecraft server game mode
+                      to be used.
+                    enum:
+                    - creative
+                    - survival
+                    - adventure
                     type: string
                   motd:
                     type: string
@@ -121,23 +134,26 @@ spec:
                 - spawn-npcs
                 type: object
               version:
-                description: Version is the minecraft version to run. Defaults to
-                  latest
-                type: string
-              worldPath:
-                description: WorldPath is the relative path to the world, inside the
-                  HostPath. Defaults to 'world'
+                description: Version is the minecraft version to run.
                 type: string
             required:
+            - enabled
+            - flavor
             - hostPath
             - image
             - initMemoryMB
             - jarSite
             - maxMemoryMB
+            - properties
+            - version
             type: object
           status:
             description: ServerStatus defines the observed state of Server
             properties:
+              lastPong:
+                description: LastPong is the timestamp of the last checked pong
+                format: int64
+                type: integer
               players:
                 description: Players is the list of online players
                 items:
@@ -151,6 +167,8 @@ spec:
                   world
                 type: string
             required:
+            - lastPong
+            - players
             - running
             type: object
         type: object

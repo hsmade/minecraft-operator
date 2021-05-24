@@ -41,3 +41,25 @@ spec:
     spawn-animals: true
     spawn-npcs: true
     spawn-monsters: true
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: operator
+  namespace: minecraft-operator-system
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+    traefik.ingress.kubernetes.io/router.entrypoints: int
+    traefik.ingress.kubernetes.io/router.priority: "2"
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+
+spec:
+  rules:
+    - host: minecraft-operator.kiezelsteen18.nl
+      http:
+        paths:
+          - backend:
+              serviceName: minecraft-operator-controller-manager-web-ui
+              servicePort: 8082
+            path: /

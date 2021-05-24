@@ -20,9 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ServerSpec defines the desired state of Server
 type ServerSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
@@ -33,33 +30,25 @@ type ServerSpec struct {
 	// Image is the docker image to run. It should have a shell, curl and, of course, java
 	Image string `json:"image"`
 
-	// WorldPath is the relative path to the world, inside the HostPath. Defaults to 'world'
-	// +optional
-	WorldPath string `json:"worldPath,omitempty"`
-
 	// Mods is a list of minecraft mods to be installed on the Server. Defaults to empty
 	// +optional
 	Mods []Mod `json:"mods,omitempty"`
 
 	// Enabled defines if the Server should be running or not. Defaults to false
-	// +optional
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled bool `json:"enabled"`
 
-	// Version is the minecraft version to run. Defaults to latest
-	// +optional
-	Version string `json:"version,omitempty"`
+	// Version is the minecraft version to run.
+	Version string `json:"version"`
 
 	// Flavor is the minecraft flavor to run. Valid values are:
-	// - "vanilla" (default)
+	// - "vanilla"
 	// - "spigot"
 	// - "paper"
 	// - "forge"
-	// +optional
-	Flavor Flavor `json:"flavor,omitempty"`
+	Flavor Flavor `json:"flavor"`
 
 	// Properties file settings
-	// +optional
-	Properties Properties `json:"properties,omitempty"`
+	Properties Properties `json:"properties"`
 
 	// Max memory (Xmx), in MB
 	MaxMemory int32 `json:"maxMemoryMB"`
@@ -75,18 +64,22 @@ type ServerSpec struct {
 	// HostPort defines the host port to bind to. Defaults to disabled
 	// +optional
 	HostPort int32 `json:"hostPort,omitempty"`
+
+	// IdleTimeoutSeconds will, when set, disable the server after the server has been without users for the timeout period.
+	// When it's not set (which is the default), it will not automatically disable the server, and it will keep running.
+	// +optional
+	IdleTimeoutSeconds int64 `json:"idleTimeoutSeconds"`
 }
 
 // Flavor describes the minecraft server flavor to be used.
-// If no Flavor is specified, the default one is VanillaFlavor
 // +kubebuilder:validation:Enum=vanilla;spigot;paper;forge
 type Flavor string
 
 const (
-	VanillaFlavor Flavor = "vanilla"
-	SpigotFlavor  Flavor = "spigot"
-	PaperFlavor   Flavor = "paper"
-	ForgeFlavor   Flavor = "forge"
+	Vanilla Flavor = "vanilla"
+	Spigot  Flavor = "spigot"
+	Paper   Flavor = "paper"
+	Forge   Flavor = "forge"
 )
 
 // Mod defines a minecraft mod to be installed on a Server
@@ -103,13 +96,34 @@ type Mod struct {
 
 // Properties defines the entries for server.properties that we support
 type Properties struct {
-	GameMode      string `json:"gamemode"`
-	Difficulty    string `json:"difficulty"`
-	SpawnMonsters bool   `json:"spawn-monsters"`
-	SpawnNpcs     bool   `json:"spawn-npcs"`
-	SpawnAnimals  bool   `json:"spawn-animals"`
-	Motd          string `json:"motd"`
+	GameMode      GameMode   `json:"gamemode"`
+	Difficulty    Difficulty `json:"difficulty"`
+	SpawnMonsters bool       `json:"spawn-monsters"`
+	SpawnNpcs     bool       `json:"spawn-npcs"`
+	SpawnAnimals  bool       `json:"spawn-animals"`
+	Motd          string     `json:"motd"`
 }
+
+// GameMode describes the minecraft server game mode to be used.
+// +kubebuilder:validation:Enum=creative;survival;adventure
+type GameMode string
+
+const (
+	Creative  GameMode = "creative"
+	Survival  GameMode = "survival"
+	Adventure GameMode = "adventure"
+)
+
+// Difficulty describes the minecraft server difficulty to be used.
+// +kubebuilder:validation:Enum=peaceful;easy;normal;hard
+type Difficulty string
+
+const (
+	Peaceful Difficulty = "peaceful"
+	Easy     Difficulty = "easy"
+	Normal   Difficulty = "normal"
+	Hard     Difficulty = "hard"
+)
 
 // ServerStatus defines the observed state of Server
 type ServerStatus struct {
@@ -123,8 +137,10 @@ type ServerStatus struct {
 	Thumbnail string `json:"thumbnail,omitempty"`
 
 	// Players is the list of online players
-	// +optional
-	Players []string `json:"players,omitempty"`
+	Players []string `json:"players"`
+
+	//LastPong is the timestamp of the last checked pong
+	LastPong int64 `json:"lastPong"`
 }
 
 //+kubebuilder:object:root=true

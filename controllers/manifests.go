@@ -32,13 +32,13 @@ func (r *ServerReconciler) createManifests(ctx context.Context, server *minecraf
 
 	err, serverProperties := helpers.RenderTemplate(serverPropertiesTemplate, server.Spec.Properties)
 	if err != nil {
-		log.Error(err, "server.properties template failed")
+		log.Info("server.properties template failed", "error", err)
 		return err
 	}
 
 	err, initScript := helpers.RenderTemplate(initScriptTemplate, server.Spec)
 	if err != nil {
-		log.Error(err, "init.sh template failed")
+		log.Info("init.sh template failed", "error", err)
 		return err
 	}
 
@@ -57,12 +57,12 @@ func (r *ServerReconciler) createManifests(ctx context.Context, server *minecraf
 	}
 
 	if err := ctrl.SetControllerReference(server, &serverConfigMap, r.Scheme); err != nil {
-		log.Error(err, "failed to set owner reference")
+		log.Info("failed to set owner reference", "error", err)
 		return err
 	}
 
 	if err := r.Create(ctx, &serverConfigMap); err != nil {
-		log.Error(err, "unable to create configMap for minecraft Server", "configMap", serverConfigMap)
+		log.Info("unable to create configMap for minecraft Server", "configMap", serverConfigMap, "error", err)
 		return err // FIXME: ignore exists
 	}
 
@@ -140,12 +140,12 @@ func (r *ServerReconciler) createManifests(ctx context.Context, server *minecraf
 	}
 
 	if err := ctrl.SetControllerReference(server, &serverPod, r.Scheme); err != nil {
-		log.Error(err, "failed to set owner reference")
+		log.Info("ERROR failed to set owner reference", "error", err)
 		return err
 	}
 
 	if err := r.Create(ctx, &serverPod); err != nil {
-		log.Error(err, "unable to create Pod for minecraft Server", "pod", serverPod)
+		log.Info("ERROR unable to create Pod for minecraft Server", "pod", serverPod, "error", err)
 		return err
 	}
 	log.Info("created pod for minecraft server", "pod", serverPod)

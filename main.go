@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"github.com/hsmade/minecraft-operator/webui"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -34,6 +33,7 @@ import (
 
 	minecraftv1 "github.com/hsmade/minecraft-operator/api/v1"
 	"github.com/hsmade/minecraft-operator/controllers"
+	"github.com/hsmade/minecraft-operator/webui"
 	//+kubebuilder:scaffold:imports
 )
 

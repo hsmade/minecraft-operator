@@ -18,8 +18,12 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"github.com/go-mc/mcping"
+	"github.com/hsmade/minecraft-operator/loglevels"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -56,7 +60,12 @@ var (
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
 // TODO:
 // - manifest generator per object
-// - if we're disabled, delete and ignore not found, or find and delete if found -> return with requeue of 30s
+// - disable if no players for x time
+// - figure out how to properly use logr, error seems to panic. Also want to log in debug
+// - also delete cm on disable
+// Structure:
+// - fetch server
+// - if server is disabled, delete manifests and ignore not found, or find and delete if found -> return with requeue of 30s
 // - always generate the manifests
 // - find the live ones
 // - if it's missing, submit -> requeue 10s
@@ -64,50 +73,71 @@ var (
 // - if it's different, patch -> requeue 10s
 // - get liveness -> update status
 // - get thumbnail -> update status
+// - enforce idleTimeoutSeconds
 // - return with requeue of 10s
-
 func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("server", req.NamespacedName)
-
-	log.Info("reconciling...")
+	log.V(loglevels.Verbose).Info("start reconciling loop")
 
 	var server minecraftv1.Server
+	log.V(loglevels.Flow).Info("fetching Server manifest")
 	if err := r.Get(ctx, req.NamespacedName, &server); err != nil {
-		log.Error(err, "unable to fetch Server")
+		log.Error(err, "ERROR unable to fetch Server, ending reconcile loop")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	log.Info("got server", "server", server.Name)
+	log.V(loglevels.Flow).Info("fetched Server manifest ok")
+	log.V(loglevels.Trace).Info("got server manifest", "server", server)
+
+	err := r.ReconcileConfigMap(ctx, log, server)
+	err = r.ReconcilePod(ctx, log, server)
+	err = r.ReconcileService(ctx, log, server)
+	err = r.ReconcileConfigIngress(ctx, log, server)
+
+	idleTime, err := r.UpdateStatus(ctx, log, server) // triggers requeue
+
+	if idleTime > server.Spec.IdleTimeoutSeconds {
+		err = r.DisableServer(ctx, log, server)
+	}
+
+	// return for requeue
+
+	// ------ old code below
 
 	defer func() {
+		log.Info("storing status in server manifest")
 		err := r.Status().Update(ctx, &server)
 		if err != nil {
-			log.Error(err, "failed to update server status field")
+			log.Info("ERROR failed to update server status field", "error", err)
 		}
+		log.Info("reconciliation done")
 	}()
 
 	var pods corev1.PodList
 	if err := r.List(ctx, &pods, client.InNamespace(req.Namespace), client.MatchingFields{serverOwnerKey: req.Name}); err != nil {
-		log.Error(err, "unable to list Pods for Server")
+		log.Info("ERROR unable to list Pods for Server", "error", err)
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
 	}
 
-	log.Info(fmt.Sprintf("Got pods: %+v", pods))
+	log.Info(fmt.Sprintf("found %d pods for server", len(pods.Items)))
 
 	// delete extraneous pods, if they exist
 	// if server is enabled, skip the first pod
 	maxPods := 0
 	if server.Spec.Enabled {
+		log.Info("Server enabled, expecting one pod")
 		maxPods = 1
 	}
+	// maxPods = 0; podIndex = 0 -> close
+	// maxPods = 1; podIndex = 0 -> ok
+	// maxPods = 1; podIndex = 1 -> close
 	for podIndex, pod := range pods.Items {
-		if podIndex >= maxPods {
+		if maxPods > podIndex || maxPods == 0 {
+			log.V(0).Info("deleting extraneous pod", "pod", pod.Name)
 			if err := r.Delete(ctx, &pod, client.PropagationPolicy(metav1.DeletePropagationBackground)); client.IgnoreNotFound(err) != nil {
-				log.Error(err, "unable to delete extraneous pod", "pod", pod)
-			} else {
-				log.V(0).Info("deleted extraneous pod", "pod", pod)
+				log.Info("ERROR unable to delete extraneous pod", "pod", pod, "error", err)
 			}
 		}
 	}
@@ -122,7 +152,7 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		log.Info("missing pod for server, creating manifests...")
 		err := r.createManifests(ctx, &server)
 		if err != nil {
-			log.Error(err, "failed to create manifests for server")
+			log.Info("ERROR failed to create manifests for server", "error", err)
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
 		}
 
@@ -139,8 +169,40 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	// TODO: update thumbnail
-	// TODO: get players
+	// the rest needs the server to be running
+	if !server.Status.Running {
+		log.Info("Server not running, stopping reconcile...")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	log.Info("connecting to server to get info...")
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:25565", serverPod.Status.PodIP)) // FIXME: ? hard coded port
+	if err != nil {
+		log.Info("ERROR unable to connect to the Server", "error", err)
+	}
+
+	status, _, err := mcping.PingAndListConn(conn, 578)
+	if err != nil {
+		log.Info("ERROR unable to ping the Server", "error", err)
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+	log.Info("got pong status for server", "status", status)
+
+	// update the last pong timestamp
+	server.Status.LastPong = time.Now().Unix()
+
+	server.Status.Players = []string{}
+	for _, player := range status.Players.Sample {
+		server.Status.Players = append(server.Status.Players, player.Name)
+	}
+	log.Info("players set", "players", server.Status.Players)
+
+	icon, err := status.Favicon.ToPNG()
+	if err != nil {
+		log.Info("ERROR unable to get thumbnail from the Server")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+	server.Status.Thumbnail = base64.StdEncoding.EncodeToString([]byte(icon))
 
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
