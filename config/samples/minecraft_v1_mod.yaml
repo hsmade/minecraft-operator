@@ -1,0 +1,7 @@
+apiVersion: minecraft.hsmade.com/v1
+kind: Mod
+metadata:
+  name: mod-sample
+spec:
+  # Add fields here
+  foo: bar

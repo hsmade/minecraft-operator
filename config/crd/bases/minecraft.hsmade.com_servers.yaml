@@ -40,21 +40,9 @@ spec:
                 description: Enabled defines if the Server should be running or not.
                   Defaults to false
                 type: boolean
-              flavor:
-                description: 'Flavor is the minecraft flavor to run. Valid values
-                  are: - "vanilla" - "spigot" - "paper" - "forge"'
-                enum:
-                - vanilla
-                - spigot
-                - paper
-                - forge
-                type: string
-              hostPath:
-                description: HostPath is the path for the Server on the host
-                type: string
               hostPort:
                 description: HostPort defines the host port to bind to. Defaults to
-                  disabled
+                  empty/disabled
                 format: int32
                 type: integer
               idleTimeoutSeconds:
@@ -65,99 +53,36 @@ spec:
                 format: int64
                 type: integer
               image:
-                description: Image is the docker image to run. It should have a shell,
-                  curl and, of course, java
+                description: Image is the docker image to run.
                 type: string
               initMemoryMB:
                 description: Initial memory (Xms), in MB
                 format: int32
                 type: integer
-              jarSite:
-                description: 'The site to get the server.jar from. It should have
-                  these in a directory named after the flavor, and the files should
-                  be named server-<version>.jar. So for the vanilla 1.16.5 the path
-                  is: <JarSite>/vanilla/server-1.16.5.jar'
-                type: string
               maxMemoryMB:
                 description: Max memory (Xmx), in MB
                 format: int32
                 type: integer
-              mods:
-                description: Mods is a list of minecraft mods to be installed on the
-                  Server. Defaults to empty
+              mod-jars:
+                description: ModJars is a list of minecraft mods to be installed on
+                  the Server. Defaults to empty
                 items:
-                  description: Mod defines a minecraft mod to be installed on a Server
-                  properties:
-                    name:
-                      description: Name is the name of the mod
-                      type: string
-                    url:
-                      description: Url is the location where the mod's jar file can
-                        be found
-                      type: string
-                    version:
-                      description: Version is the version of the mod
-                      type: string
-                  required:
-                  - name
-                  - url
-                  - version
-                  type: object
+                  type: string
                 type: array
-              nodePort:
-                description: NodePort will make the service of type nodePort, if set.
-                  Else the service will be of type ClusterIP. You can find the chosen
-                  port by getting the service object through kubectl
-                type: boolean
               properties:
+                additionalProperties:
+                  type: string
                 description: Properties file settings
-                properties:
-                  difficulty:
-                    description: Difficulty describes the minecraft server difficulty
-                      to be used.
-                    enum:
-                    - peaceful
-                    - easy
-                    - normal
-                    - hard
-                    type: string
-                  gamemode:
-                    description: GameMode describes the minecraft server game mode
-                      to be used.
-                    enum:
-                    - creative
-                    - survival
-                    - adventure
-                    type: string
-                  motd:
-                    type: string
-                  spawn-animals:
-                    type: boolean
-                  spawn-monsters:
-                    type: boolean
-                  spawn-npcs:
-                    type: boolean
-                required:
-                - difficulty
-                - gamemode
-                - motd
-                - spawn-animals
-                - spawn-monsters
-                - spawn-npcs
                 type: object
-              version:
-                description: Version is the minecraft version to run.
+              server-jar:
+                description: The JAR file to run
                 type: string
             required:
             - enabled
-            - flavor
-            - hostPath
             - image
             - initMemoryMB
-            - jarSite
             - maxMemoryMB
-            - properties
-            - version
+            - server-jar
             type: object
           status:
             description: ServerStatus defines the observed state of Server

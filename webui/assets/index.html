@@ -42,7 +42,7 @@
             <md-table-cell md-label="Spelers" md-sort-by="players">{{ item.status.players }}</md-table-cell>
             <md-table-cell md-label="Soort" md-sort-by="flavor">{{ item.spec.flavor }}</md-table-cell>
             <md-table-cell md-label="Versie" md-sort-by="version" md-numeric>{{ item.spec.version }}</md-table-cell>
-            <md-table-cell md-label="Mode" md-sort-by="gamemoe">{{ item.spec.properties.gamemode }}</md-table-cell>
+            <md-table-cell md-label="Mode" md-sort-by="gamemode">{{ item.spec.properties.gamemode }}</md-table-cell>
             <md-table-cell md-label="Poort" md-sort-by="hostport" md-numeric>{{ item.spec.hostPort }}</md-table-cell>
             <md-table-cell>
                 <md-button v-on:click="dialogItem = item; dialog = true"><md-icon>info</md-icon></md-button>

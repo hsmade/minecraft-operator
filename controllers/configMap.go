@@ -15,9 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//go:embed assets/eula.txt
-var eula string
-
 //go:embed assets/server.properties.tmpl
 var serverPropertiesTemplate string
 
@@ -90,7 +87,8 @@ func (r *ServerReconciler) RenderConfigMap(log logr.Logger, server *v1.Server) (
 	log.V(loglevels.Verbose).Info("rendering configMap")
 
 	log.V(loglevels.Flow).Info("rendering server.properties")
-	err, serverProperties := helpers.RenderTemplate(serverPropertiesTemplate, server.Spec.Properties)
+	server.Spec.Properties["motd"] = server.Name
+	err, serverProperties := helpers.RenderTemplate(serverPropertiesTemplate, map[string]map[string]string{"Properties": server.Spec.Properties})
 	if err != nil {
 		return nil, errors.Wrap(err, "rendering server.properties")
 	}
@@ -116,7 +114,6 @@ func (r *ServerReconciler) RenderConfigMap(log logr.Logger, server *v1.Server) (
 			Namespace:   server.Namespace,
 		},
 		Data: map[string]string{
-			"eula.txt":          eula,
 			"server.properties": serverProperties,
 			"init.sh":           initScript,
 		},

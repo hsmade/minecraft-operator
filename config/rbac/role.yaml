@@ -63,6 +63,32 @@ rules:
 - apiGroups:
   - minecraft.hsmade.com
   resources:
+  - OperatorConfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - minecraft.hsmade.com
+  resources:
+  - OperatorConfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - minecraft.hsmade.com
+  resources:
+  - OperatorConfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - minecraft.hsmade.com
+  resources:
   - servers
   verbs:
   - create

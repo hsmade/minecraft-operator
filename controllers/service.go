@@ -60,7 +60,7 @@ func (r *ServerReconciler) ReconcileService(ctx context.Context, log logr.Logger
 		}
 	}
 
-	// we don't update the service, as we the user can't change anything in the Server Spec that changes here
+	// we don't update the service, as the user can't change anything in the Server Spec that changes here
 	return nil
 }
 

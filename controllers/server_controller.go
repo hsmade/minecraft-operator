@@ -75,7 +75,19 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	log.V(loglevels.Flow).Info("fetched Server manifest ok")
 	log.V(loglevels.Trace).Info("got server manifest", "server", server)
 
-	err := r.ReconcileConfigMap(ctx, log, &server)
+	err := r.ReconcilePersistentVolume(ctx, log, &server)
+	if err != nil {
+		log.V(loglevels.Error).Error(err, "failed to reconcile PV, retrying in 30s")
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	}
+
+	err = r.ReconcilePersistentVolumeClaim(ctx, log, &server)
+	if err != nil {
+		log.V(loglevels.Error).Error(err, "failed to reconcile PVC, retrying in 30s")
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	}
+
+	err = r.ReconcileConfigMap(ctx, log, &server)
 	if err != nil {
 		log.V(loglevels.Error).Error(err, "failed to reconcile configMap, retrying in 30s")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
@@ -117,112 +129,25 @@ func (r *ServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// return for requeue
 	return ctrl.Result{RequeueAfter: 30 * time.Second}, err
-
-	// ------ old code below
-
-	//defer func() {
-	//	log.Info("storing status in server manifest")
-	//	err := r.Status().Update(ctx, &server)
-	//	if err != nil {
-	//		log.Info("ERROR failed to update server status field", "error", err)
-	//	}
-	//	log.Info("reconciliation done")
-	//}()
-	//
-	//var pods corev1.PodList
-	//if err := r.List(ctx, &pods, client.InNamespace(req.Namespace), client.MatchingFields{serverOwnerKey: req.Name}); err != nil {
-	//	log.Info("ERROR unable to list Pods for Server", "error", err)
-	//	return ctrl.Result{RequeueAfter: 10 * time.Second}, err
-	//}
-	//
-	//log.Info(fmt.Sprintf("found %d pods for server", len(pods.Items)))
-	//
-	//// delete extraneous pods, if they exist
-	//// if server is enabled, skip the first pod
-	//maxPods := 0
-	//if server.Spec.Enabled {
-	//	log.Info("Server enabled, expecting one pod")
-	//	maxPods = 1
-	//}
-	//// maxPods = 0; podIndex = 0 -> close
-	//// maxPods = 1; podIndex = 0 -> ok
-	//// maxPods = 1; podIndex = 1 -> close
-	//for podIndex, pod := range pods.Items {
-	//	if maxPods > podIndex || maxPods == 0 {
-	//		log.V(0).Info("deleting extraneous pod", "pod", pod.Name)
-	//		if err := r.Delete(ctx, &pod, client.PropagationPolicy(metav1.DeletePropagationBackground)); client.IgnoreNotFound(err) != nil {
-	//			log.Info("ERROR unable to delete extraneous pod", "pod", pod, "error", err)
-	//		}
-	//	}
-	//}
-	//
-	//if !server.Spec.Enabled {
-	//	return ctrl.Result{}, nil
-	//}
-	//
-	//server.Status.Running = false // default
-	//
-	//if server.Spec.Enabled && len(pods.Items) == 0 {
-	//	log.Info("missing pod for server, creating manifests...")
-	//	err := r.createManifests(ctx, &server)
-	//	if err != nil {
-	//		log.Info("ERROR failed to create manifests for server", "error", err)
-	//		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
-	//	}
-	//
-	//	log.Info("created manifests for minecraft server")
-	//	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-	//}
-	//
-	//// update the pod's status
-	//serverPod := pods.Items[0]
-	//for _, condition := range serverPod.Status.Conditions {
-	//	if condition.Type == corev1.PodReady {
-	//		log.Info("updating server status with pod ready status", "status", condition.Status)
-	//		server.Status.Running = condition.Status == corev1.ConditionTrue
-	//	}
-	//}
-	//
-	//// the rest needs the server to be running
-	//if !server.Status.Running {
-	//	log.Info("Server not running, stopping reconcile...")
-	//	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-	//}
-	//
-	//log.Info("connecting to server to get info...")
-	//conn, err := net.Dial("tcp", fmt.Sprintf("%s:25565", serverPod.Status.PodIP)) // FIXME: ? hard coded port
-	//if err != nil {
-	//	log.Info("ERROR unable to connect to the Server", "error", err)
-	//}
-	//
-	//status, _, err := mcping.PingAndListConn(conn, 578)
-	//if err != nil {
-	//	log.Info("ERROR unable to ping the Server", "error", err)
-	//	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-	//}
-	//log.Info("got pong status for server", "status", status)
-	//
-	//// update the last pong timestamp
-	//server.Status.LastPong = time.Now().Unix()
-	//
-	//server.Status.Players = []string{}
-	//for _, player := range status.Players.Sample {
-	//	server.Status.Players = append(server.Status.Players, player.Name)
-	//}
-	//log.Info("players set", "players", server.Status.Players)
-	//
-	//icon, err := status.Favicon.ToPNG()
-	//if err != nil {
-	//	log.Info("ERROR unable to get thumbnail from the Server")
-	//	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-	//}
-	//server.Status.Thumbnail = base64.StdEncoding.EncodeToString([]byte(icon))
-	//
-	//return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.PersistentVolumeClaim{}, serverOwnerKey, func(rawObj client.Object) []string {
+		// grab the job object, extract the owner...
+		pvc := rawObj.(*corev1.PersistentVolumeClaim)
+		owner := metav1.GetControllerOf(pvc)
+		if owner == nil {
+			return nil
+		}
+		if owner.APIVersion != apiGVStr || owner.Kind != "Server" {
+			return nil
+		}
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
 
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1.Deployment{}, serverOwnerKey, func(rawObj client.Object) []string {
 		// grab the job object, extract the owner...

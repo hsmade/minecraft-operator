@@ -13,7 +13,7 @@ import (
 
 // UpdateStatus updates the Server status
 func (r *ServerReconciler) UpdateStatus(ctx context.Context, log logr.Logger, server *v1.Server) error {
-	log.V(loglevels.Verbose).Info("start reconciling of status")
+	log.V(loglevels.Verbose).Info("start reconciling of Server status")
 
 	server.Status.Running = false
 	server.Status.LastPong = 0

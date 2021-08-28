@@ -19,7 +19,6 @@ import (
 
 // ReconcileDeployment make sure the deployment exists as it should.
 // TODO:
-// - mods download
 // - readiness check
 // - liveliness check
 func (r *ServerReconciler) ReconcileDeployment(ctx context.Context, log logr.Logger, server *minecraftv1.Server) error {
@@ -92,6 +91,10 @@ func (r *ServerReconciler) ReconcileDeployment(ctx context.Context, log logr.Log
 func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1.Server) (*appsv1.Deployment, error) {
 	log.V(loglevels.Verbose).Info("rendering Deployment")
 
+	if Config.ServerPV == nil || Config.ModJarsPVC == nil || Config.ServerJarsPVC == nil {
+		return nil, errors.New("Operator config isn't initialised (yet)") // FIXME
+	}
+
 	var executeBit int32 = 0o777
 	var replicas int32 = 0
 	if server.Spec.Enabled {
@@ -105,7 +108,6 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 		configHash = 0
 	}
 
-	dirType := corev1.HostPathDirectory
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -141,9 +143,24 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 						{
 							Name: "world",
 							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: server.Spec.HostPath,
-									Type: &dirType,
+								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+									ClaimName: server.Name,
+								},
+							},
+						},
+						{
+							Name: "server-jars",
+							VolumeSource: corev1.VolumeSource{
+								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+									ClaimName: Config.ServerJarsPVC.Name,
+								},
+							},
+						},
+						{
+							Name: "mod-jars",
+							VolumeSource: corev1.VolumeSource{
+								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+									ClaimName: Config.ModJarsPVC.Name,
 								},
 							},
 						},
@@ -165,36 +182,65 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 							},
 						},
 					},
-					Containers: []corev1.Container{{
-						Name:  "minecraft",
-						Image: server.Spec.Image,
-						Ports: []corev1.ContainerPort{{
-							Name:          "tcp-minecraft",
-							ContainerPort: 25565,
-							HostPort:      server.Spec.HostPort,
-						}},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								Name:      "data",
-								MountPath: "/data",
-							},
-							{
-								Name:      "world",
-								MountPath: "/data/world",
-							},
-							{
-								Name:      "config",
-								MountPath: "/config",
-							},
-							{
-								Name:      "config",
-								SubPath:   "init.sh",
-								MountPath: "/init.sh",
+					InitContainers: []corev1.Container{
+						{
+							Name:    "init",
+							Image:   Config.InitContainerImage,
+							Command: []string{"/init.sh"},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "data",
+									MountPath: "/data",
+								},
+								{
+									Name:      "config",
+									MountPath: "/config",
+								},
+								{
+									Name:      "server-jars",
+									MountPath: "/jars/server",
+								},
+								{
+									Name:      "mod-jars",
+									MountPath: "/jars/mods",
+								},
+								{
+									Name:      "config",
+									SubPath:   "init.sh",
+									MountPath: "/init.sh",
+								},
 							},
 						},
-						Command:    []string{"/init.sh"},
-						WorkingDir: "/data",
-					}},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:  "minecraft",
+							Image: server.Spec.Image,
+							Ports: []corev1.ContainerPort{{
+								Name:          "tcp-minecraft",
+								ContainerPort: 25565,
+								HostPort:      server.Spec.HostPort,
+							}},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "data",
+									MountPath: "/data",
+								},
+								{
+									Name:      "world",
+									MountPath: "/data/world",
+									SubPath:   server.Name,
+								},
+							},
+							Command: []string{
+								"java",
+								fmt.Sprintf("-Xmx%dM", server.Spec.MaxMemory),
+								fmt.Sprintf("-Xms%dM", server.Spec.InitMemory),
+								"-jar", "server.jar",
+							},
+							WorkingDir: "/data",
+						},
+					},
 				},
 			},
 		},

@@ -1,76 +1,148 @@
 apiVersion: minecraft.hsmade.com/v1
-kind: Server
+kind: OperatorConfig
 metadata:
-  name: test-a
+  name: test
   namespace: minecraft
 spec:
-  hostPath: /tmp/minecraft-test/
+  server-jars-pvc: server-jars
+  mod-jars-pvc: mod-jars
+  servers-pv:
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      capacity:
+        storage: 1Gi
+      hostPath:
+        path: /srv/minecraft/servers
+      persistentVolumeReclaimPolicy: Retain
+      storageClassName: microk8s-hostpath
+      volumeMode: Filesystem
+  init-container-image: busybox
+---
+apiVersion: minecraft.hsmade.com/v1
+kind: Server
+metadata:
+  name: test-1
+  namespace: minecraft
+spec:
   image: adoptopenjdk:8-jre-hotspot
   enabled: true
-  flavor: vanilla
-  version: 1.16.5
   maxMemoryMB: 1024
   initMemoryMB: 1024
-  jarSite: "https://hsmade.com/minecraft"
-  nodePort: true
+  server-jar: "forge-1.12.2.jar"
+  mod-jars:
+    - cfm-6.3.0-mc1.12.2.jar
   idleTimeoutSeconds: 10
   properties:
     motd: Abc
     gamemode: creative
     difficulty: peaceful
-    spawn-animals: false
-    spawn-npcs: true
-    spawn-monsters: true
+    spawn-animals: "false"
+    spawn-npcs: "true"
+    spawn-monsters: "true"
 ---
 apiVersion: minecraft.hsmade.com/v1
 kind: Server
 metadata:
-  name: test-on
+  name: test-2
   namespace: minecraft
 spec:
-  hostPath: /tmp/minecraft-test/
   image: adoptopenjdk:8-jre-hotspot
   enabled: true
-  flavor: vanilla
-  version: 1.16.5
   maxMemoryMB: 1024
   initMemoryMB: 1024
-  jarSite: "https://hsmade.com/minecraft"
-  nodePort: true
+  server-jar: "server-1.16.5.jar"
   idleTimeoutSeconds: 10
   properties:
     motd: mijn server
     gamemode: creative
     difficulty: peaceful
-    spawn-animals: true
-    spawn-npcs: true
-    spawn-monsters: true
+    spawn-animals: "true"
+    spawn-npcs: "true"
+    spawn-monsters: "true"
 ---
 apiVersion: minecraft.hsmade.com/v1
 kind: Server
 metadata:
-  name: test-off
+  name: test-3
   namespace: minecraft
 spec:
-  hostPath: /tmp/minecraft-test/
   image: adoptopenjdk:8-jre-hotspot
   enabled: false
-  flavor: vanilla
-  version: 1.14.4
   maxMemoryMB: 1024
   initMemoryMB: 1024
-  jarSite: "https://hsmade.com/minecraft"
+  server-jar: "server-1.16.5.jar"
   hostPort: 25699
   idleTimeoutSeconds: 10
   properties:
     motd: mijn server - uit
     gamemode: creative
     difficulty: peaceful
-    spawn-animals: true
-    spawn-npcs: true
-    spawn-monsters: true
+    spawn-animals: "true"
+    spawn-npcs: "true"
+    spawn-monsters: "true"
 ---
-apiVersion: extensions/v1beta1
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minecraft-server-jars
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /srv/minecraft/jars/server
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: microk8s-hostpath
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: server-jars
+  namespace: minecraft
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: microk8s-hostpath
+  volumeMode: Filesystem
+  volumeName: minecraft-server-jars
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minecraft-mod-jars
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /srv/minecraft/jars/mods
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: microk8s-hostpath
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mod-jars
+  namespace: minecraft
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: microk8s-hostpath
+  volumeMode: Filesystem
+  volumeName: minecraft-mod-jars
+---
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: operator
@@ -81,13 +153,15 @@ metadata:
     traefik.ingress.kubernetes.io/router.priority: "2"
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
-
 spec:
   rules:
     - host: minecraft-operator.kiezelsteen18.nl
       http:
         paths:
           - backend:
-              serviceName: minecraft-operator-controller-manager-web-ui
-              servicePort: 8082
+              service:
+                name: minecraft-operator-controller-manager-web-ui
+                port:
+                  name: http
             path: /
+            pathType: Prefix

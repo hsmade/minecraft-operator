@@ -6,15 +6,29 @@ and I don't want to have to start them on (her) demand, I wrote a simple web-app
 Now to overcome the last 'burden' of manually having to create the directories, scripts, config, etc, every time
 that she wants a new server, I started working on this operator.
 
+### Server
 This operator consumes the `Server` CRD, which lets you define the specifics about the server you want to run.
 It also has a web UI that allows you to enable/disable the Servers. You can configure an idle timeout on the Server
 object, to let it shut down after the last player left, and the said timeout has expired.
+
+### Mod
+The `Mod` CRD specifies a mod, its version and the URL to download it from. 
+These are referenced from the `Server` manifest in the `Mods` list.
 
 ## Running the operator
 
 ## Example Server definition
 
 ## Development
+### run locally
+```bash
+make install manifests generate fmt vet && go run ./main.go --zap-log-level 9
+```
+### deploy
+```bash
+make docker-build docker-push deploy
+```
+
 ### TODO
 See the TODO/FIXME annotations in the code.
 Also:

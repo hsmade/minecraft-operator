@@ -24,31 +24,19 @@ import (
 type ServerSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// HostPath is the path for the Server on the host
-	HostPath string `json:"hostPath"`
-
-	// Image is the docker image to run. It should have a shell, curl and, of course, java
+	// Image is the docker image to run.
 	Image string `json:"image"`
 
-	// Mods is a list of minecraft mods to be installed on the Server. Defaults to empty
+	// ModJars is a list of minecraft mods to be installed on the Server. Defaults to empty
 	// +optional
-	Mods []Mod `json:"mods,omitempty"`
+	ModJars []string `json:"mod-jars,omitempty"`
 
 	// Enabled defines if the Server should be running or not. Defaults to false
 	Enabled bool `json:"enabled"`
 
-	// Version is the minecraft version to run.
-	Version string `json:"version"`
-
-	// Flavor is the minecraft flavor to run. Valid values are:
-	// - "vanilla"
-	// - "spigot"
-	// - "paper"
-	// - "forge"
-	Flavor Flavor `json:"flavor"`
-
 	// Properties file settings
-	Properties Properties `json:"properties"`
+	// +optional
+	Properties map[string]string `json:"properties"`
 
 	// Max memory (Xmx), in MB
 	MaxMemory int32 `json:"maxMemoryMB"`
@@ -56,17 +44,10 @@ type ServerSpec struct {
 	// Initial memory (Xms), in MB
 	InitMemory int32 `json:"initMemoryMB"`
 
-	// The site to get the server.jar from. It should have these in a directory named after the flavor, and the files
-	// should be named server-<version>.jar. So for the vanilla 1.16.5 the path is:
-	// <JarSite>/vanilla/server-1.16.5.jar
-	JarSite string `json:"jarSite"`
+	// The JAR file to run
+	ServerJar string `json:"server-jar"`
 
-	// NodePort will make the service of type nodePort, if set. Else the service will be of type ClusterIP.
-	// You can find the chosen port by getting the service object through kubectl
-	// +optional
-	NodePort bool `json:"nodePort,omitempty"`
-
-	// HostPort defines the host port to bind to. Defaults to disabled
+	// HostPort defines the host port to bind to. Defaults to empty/disabled
 	// +optional
 	HostPort int32 `json:"hostPort"`
 
@@ -75,60 +56,6 @@ type ServerSpec struct {
 	// +optional
 	IdleTimeoutSeconds int64 `json:"idleTimeoutSeconds,omitempty"`
 }
-
-// Flavor describes the minecraft server flavor to be used.
-// +kubebuilder:validation:Enum=vanilla;spigot;paper;forge
-type Flavor string
-
-const (
-	Vanilla Flavor = "vanilla"
-	Spigot  Flavor = "spigot"
-	Paper   Flavor = "paper"
-	Forge   Flavor = "forge"
-)
-
-// Mod defines a minecraft mod to be installed on a Server
-type Mod struct {
-	// Name is the name of the mod
-	Name string `json:"name"`
-
-	// Version is the version of the mod
-	Version string `json:"version"`
-
-	// Url is the location where the mod's jar file can be found
-	Url string `json:"url"`
-}
-
-// Properties defines the entries for server.properties that we support
-type Properties struct {
-	GameMode      GameMode   `json:"gamemode"`
-	Difficulty    Difficulty `json:"difficulty"`
-	SpawnMonsters bool       `json:"spawn-monsters"`
-	SpawnNpcs     bool       `json:"spawn-npcs"`
-	SpawnAnimals  bool       `json:"spawn-animals"`
-	Motd          string     `json:"motd"`
-}
-
-// GameMode describes the minecraft server game mode to be used.
-// +kubebuilder:validation:Enum=creative;survival;adventure
-type GameMode string
-
-const (
-	Creative  GameMode = "creative"
-	Survival  GameMode = "survival"
-	Adventure GameMode = "adventure"
-)
-
-// Difficulty describes the minecraft server difficulty to be used.
-// +kubebuilder:validation:Enum=peaceful;easy;normal;hard
-type Difficulty string
-
-const (
-	Peaceful Difficulty = "peaceful"
-	Easy     Difficulty = "easy"
-	Normal   Difficulty = "normal"
-	Hard     Difficulty = "hard"
-)
 
 // ServerStatus defines the observed state of Server
 type ServerStatus struct {
