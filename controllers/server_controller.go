@@ -44,6 +44,7 @@ var (
 	apiGVStr       = minecraftv1.GroupVersion.String()
 )
 
+//+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=operatorconfigs,verbs=get;list;watch
 //+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=servers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=servers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=minecraft.hsmade.com,resources=servers/finalizers,verbs=update
@@ -53,6 +54,10 @@ var (
 //+kubebuilder:rbac:groups="",resources=configmaps/status,verbs=get
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=services/status,verbs=get
+//+kubebuilder:rbac:groups="",resources=persistentvolumes,verbs=get;list;watch;create;delete;update
+//+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;delete;update
+//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=pods/log,verbs=get
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

@@ -29,7 +29,7 @@ spec:
   enabled: true
   maxMemoryMB: 1024
   initMemoryMB: 1024
-  server-jar: "forge-1.12.2.jar"
+  server-version: "forge-1.12.2"
   mod-jars:
     - cfm-6.3.0-mc1.12.2.jar
   idleTimeoutSeconds: 10
@@ -51,7 +51,7 @@ spec:
   enabled: true
   maxMemoryMB: 1024
   initMemoryMB: 1024
-  server-jar: "server-1.16.5.jar"
+  server-version: "vanilla-1.16.5"
   idleTimeoutSeconds: 10
   properties:
     motd: mijn server
@@ -71,7 +71,7 @@ spec:
   enabled: false
   maxMemoryMB: 1024
   initMemoryMB: 1024
-  server-jar: "server-1.16.5.jar"
+  server-version: "vanilla-1.16.5"
   hostPort: 25699
   idleTimeoutSeconds: 10
   properties:

@@ -3,27 +3,16 @@ set -xe
 cd /data
 mkdir -p mods
 
-echo "Linking config files"
-ln -vsf /config/* .
-
 echo "Copying server.jar"
-cp /jars/server/{{ .ServerJar }} server.jar
+cp -a /jars/server/{{ .ServerVersion }}/* ./
 
-if echo {{ .ServerJar }} | grep -q forge
-then
-    echo "Installing forge"
-    # FIXME: deze container heeft geen java, mss dan toch maar een start script maken?
-    # elke installer geeft weer andere artifacts en andere manier van starten, dus voor forge moet `libraries/` mee met de jar?
-fi
+echo "Copying config file"
+cat /config/server.properties > server.properties
 
 echo "Copying mods"
 {{ range $mod := .ModJars }}
 cp /jars/mods/{{ $mod }} mods/
 {{ end }}
-
-echo "Copying in server.properties file"
-rm server.properties
-cp /config/server.properties .
 
 echo "Writing eula.txt file"
 cat << EOF > eula.txt

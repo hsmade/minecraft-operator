@@ -15,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// FIXME: we can't update an existing PVC
+
 // ReconcilePersistentVolumeClaim make sure the PVC exists as it should.
 func (r *ServerReconciler) ReconcilePersistentVolumeClaim(ctx context.Context, log logr.Logger, server *v1.Server) error {
 	log.V(loglevels.Verbose).Info("start reconciling of PersistentVolumeClaim")

@@ -72,7 +72,7 @@ func (r *ServerReconciler) ReconcileDeployment(ctx context.Context, log logr.Log
 		!reflect.DeepEqual(deployment.Spec.Template.Spec.Containers[0].Image, DeploymentList.Items[0].Spec.Template.Spec.Containers[0].Image) ||
 		!reflect.DeepEqual(deployment.Spec.Replicas, DeploymentList.Items[0].Spec.Replicas) ||
 		!reflect.DeepEqual(deployment.ObjectMeta.Annotations["configHash"], DeploymentList.Items[0].ObjectMeta.Annotations["configHash"]) ||
-		!reflect.DeepEqual(deployment.Spec.Template.Spec.Containers[0].Command, DeploymentList.Items[0].Spec.Template.Spec.Containers[0].Command) {
+		!reflect.DeepEqual(deployment.Spec.Template.Spec.Containers, DeploymentList.Items[0].Spec.Template.Spec.Containers) {
 		log.V(loglevels.Info).Info("replacing Deployment")
 		log.V(loglevels.Trace).Info("replacing Deployment", "rendered", deployment.Spec, "found", DeploymentList.Items[0].Spec)
 		DeploymentList.Items[0].Spec = deployment.Spec
@@ -120,6 +120,9 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
+			Strategy: appsv1.DeploymentStrategy{
+				Type: appsv1.RecreateDeploymentStrategyType,
+			},
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": fmt.Sprintf("minecraft-operator-server-%s", server.Name),
@@ -231,14 +234,24 @@ func (r *ServerReconciler) RenderDeployment(log logr.Logger, server *minecraftv1
 									MountPath: "/data/world",
 									SubPath:   server.Name,
 								},
+								{
+									Name:      "config",
+									MountPath: "/config",
+								},
 							},
 							Command: []string{
-								"java",
-								fmt.Sprintf("-Xmx%dM", server.Spec.MaxMemory),
-								fmt.Sprintf("-Xms%dM", server.Spec.InitMemory),
-								"-jar", "server.jar",
+								"bash", "-x", "./start.sh",
 							},
+							TTY:        true,
 							WorkingDir: "/data",
+							Env: []corev1.EnvVar{
+								{
+									Name: "XMX", Value: fmt.Sprintf("%dM", server.Spec.MaxMemory),
+								},
+								{
+									Name: "XMS", Value: fmt.Sprintf("%dM", server.Spec.InitMemory),
+								},
+							},
 						},
 					},
 				},

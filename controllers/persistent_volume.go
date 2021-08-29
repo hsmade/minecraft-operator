@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// FIXME: we can't update an existing PV, and we can only delete it when the PVCs are gone
+
 // ReconcilePersistentVolume make sure the PV exists as it should.
 func (r *ServerReconciler) ReconcilePersistentVolume(ctx context.Context, log logr.Logger, server *v1.Server) error {
 	log.V(loglevels.Verbose).Info("start reconciling of PersistentVolume")

@@ -44,8 +44,8 @@ type ServerSpec struct {
 	// Initial memory (Xms), in MB
 	InitMemory int32 `json:"initMemoryMB"`
 
-	// The JAR file to run
-	ServerJar string `json:"server-jar"`
+	// The server version to run (e.g.: vanilla-1.16.5, forge-1.12.2)
+	ServerVersion string `json:"server-version"`
 
 	// HostPort defines the host port to bind to. Defaults to empty/disabled
 	// +optional

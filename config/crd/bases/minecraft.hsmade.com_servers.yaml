@@ -74,15 +74,15 @@ spec:
                   type: string
                 description: Properties file settings
                 type: object
-              server-jar:
-                description: The JAR file to run
+              server-version:
+                description: 'The server version to run (e.g.: vanilla-1.16.5, forge-1.12.2)'
                 type: string
             required:
             - enabled
             - image
             - initMemoryMB
             - maxMemoryMB
-            - server-jar
+            - server-version
             type: object
           status:
             description: ServerStatus defines the observed state of Server

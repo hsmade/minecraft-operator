@@ -50,3 +50,43 @@ This project uses the following levels:
  - `9/Trace`: program flow with full details, for debugging nasty errors
 
 The first two levels are compatible with / implemented by logr.
+
+## Adding new server JARs
+Forge 1.17:
+```bash
+$ cd /srv/minecraft/jars/server
+$ mkdir forge-1.17.1
+$ cd forge-1.17.1
+$ java -jar forge-1.17.1-37.0.45-installer.jar --installServer
+$ cat << EOF > start.sh
+#!/bin/bash
+java -Xmx ${XMX:-1024M} -Xms ${XMS:-1024M} @libraries/net/minecraftforge/forge/1.17.1-37.0.45/unix_args.txt nogui
+EOF
+$ chmod +x start.sh
+```
+
+Forge < 1.17:
+```bash
+$ cd /srv/minecraft/jars/server
+$ mkdir forge-1.16.5
+$ cd forge-1.16.5
+$ java -jar forge-1.16.5-36.2.2-installer.jar --installServer
+$ cat << EOF > start.sh
+#!/bin/bash
+exec java -Xmx ${XMX:-1024M} -Xms ${XMS:-1024M} -jar forge-1.16.5-36.2.2.jar nogui
+EOF
+$ chmod +x start.sh
+```
+
+Vanilla:
+```bash
+$ cd /srv/minecraft/jars/server
+$ mkdir vanilla-1.16.5
+$ cd vanilla-1.16.5
+$ wget https://launcher.mojang.com/v1/objects/1b557e7b033b583cd9f66746b7a9ab1ec1673ced/server.jar
+$ cat << EOF > start.sh
+#!/bin/bash
+exec java -Xmx ${XMX:-1024M} -Xms ${XMS:-1024M} -jar server.jar nogui
+EOF
+$ chmod +x start.sh
+```
